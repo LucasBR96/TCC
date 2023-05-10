@@ -163,4 +163,8 @@ def print_simulation( sim_list ):
     anim = anm.FuncAnimation( fig , draw , frames = len( cdf ) , interval = 50/FPS )
     plt.show()
 
-print_simulation( [ 0 , 1, 2 , 21 ] )
+if __name__ == "__main__":
+
+    argl = sys.argv[ 1: ]
+    if not( argl ):
+        print_simulation( [ 0 , 1 , 2 ] )

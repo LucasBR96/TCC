@@ -80,10 +80,14 @@ def main():
     Num_train = 90
     Num_test  = 10
 
-    for i in range( 2 , Num_train + Num_test):
+    h = 0.01
+    for i in range( Num_train + Num_test):
 
         if i == 0:
-            X = np.zeros( ( 2 , 2 ) )
+            X = np.array([
+                [ 1 , 0 ],
+                [ 1 , 0 ],
+            ]) 
         elif i == 1:
             X = np.array([
                 [ 1 , 0 ],
@@ -112,22 +116,38 @@ def main():
         simulate( rpk , max_time , full_path)
 
 if __name__ == "__main__":
-    # main()
+    main()
 
-    path = "data/simulations/double_pendulum/train_data"
-    h_step = 5*( 1e-4 )
-    max_time = 120
+    # path = "data/simulations/double_pendulum/train_data"
+    # h_step = 5*( 1e-4 )
+    # max_time = 120
 
-    h = 0.01
-    for i in range( 3 ):
+    # h = 0.01
+    # for i in range( 1 ):
 
-        
-        rpk = rk2_machine(
-            X,
-            h_step,
-            dpend_update,
-            None
-        )
+    #     if i == 0:
+    #         X = np.array([
+    #             [ 1 , 0 ],
+    #             [ 1 , 0 ],
+    #         ]) 
+    #     elif i == 1:
+    #         X = np.array([
+    #             [ 1 , 0 ],
+    #             [ 1 + h , 0 ]
+    #         ])
+    #     elif i == 2:
+    #         X = np.array([
+    #             [ 1 , 0 ],
+    #             [ 1 - h , 0 ]
+    #         ])
+    #     X = X*( np.pi/2 )
 
-        full_path = path + f"/train_{i}.csv"
-        simulate( rpk , max_time , full_path )
+    #     rpk = rk2_machine(
+    #         X,
+    #         h_step,
+    #         dpend_update,
+    #         None
+    #     )
+
+    #     full_path = path + f"/train_{i}.csv"
+    #     simulate( rpk , max_time , full_path )
