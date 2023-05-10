@@ -82,13 +82,20 @@ def main():
 
     for i in range( 2 , Num_train + Num_test):
 
-        if i < Num_train:
-            end = f"/train_data/train_{i}.csv"
-        else:
-            end = f"/test_data/test_{ i - Num_train }.csv"
-        full_path = path + end
-
-        X = ( np.pi/2 )*np.random.normal( size = ( 2 , 2 ) )
+        if i == 0:
+            X = np.zeros( ( 2 , 2 ) )
+        elif i == 1:
+            X = np.array([
+                [ 1 , 0 ],
+                [ 1 + h , 0 ]
+            ])
+        elif i == 2:
+            X = np.array([
+                [ 1 , 0 ],
+                [ 1 - h , 0 ]
+            ])
+        X = X*( np.pi/2 )
+        
         rpk = rk2_machine(
             X,
             h_step,
@@ -96,7 +103,31 @@ def main():
             None
         )
 
+        if i < Num_train:
+            end = f"/train_data/train_{i}.csv"
+        else:
+            end = f"/test_data/test_{ i - Num_train }.csv"
+        full_path = path + end
+
         simulate( rpk , max_time , full_path)
 
 if __name__ == "__main__":
-    main()
+    # main()
+
+    path = "data/simulations/double_pendulum/train_data"
+    h_step = 5*( 1e-4 )
+    max_time = 120
+
+    h = 0.01
+    for i in range( 3 ):
+
+        
+        rpk = rk2_machine(
+            X,
+            h_step,
+            dpend_update,
+            None
+        )
+
+        full_path = path + f"/train_{i}.csv"
+        simulate( rpk , max_time , full_path )
