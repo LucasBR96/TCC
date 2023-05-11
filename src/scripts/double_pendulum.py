@@ -3,8 +3,12 @@ import sys
 ipath = os.getcwd() + "/src/classes"
 sys.path.append( ipath )
 
+import itertools as itt
+import time
+import threading as thrd
+
 import numpy as np
-from rk_machine import rk2_machine
+from rk_machine import rk_machine , get_rk4_machine
 
 def get_omega1_dot( theta1 , omega1 , theta2 , omega2 ):
 
@@ -50,7 +54,7 @@ def dpend_update( X : np.ndarray ):
 
     return X_hat
 
-def simulate( rkp : rk2_machine , max_time , path ):
+def simulate( rkp : rk_machine , max_time , path ):
 
     with open( path , "a" ) as f:
         f.write( "t,theta_1,omega_1,theta_2,omega_2")
@@ -59,65 +63,73 @@ def simulate( rkp : rk2_machine , max_time , path ):
 
             t , X = rkp()
             
-            s = f"\n{t}"
-            s += f",{X[0,0]}" #theta_1
-            s += f",{X[0,1]}" #omega_1
-            s += f",{X[1,0]}" #theta_2
-            s += f",{X[1,1]}" #omega_2
+            s = f"\n{t:.3f}"
+            s += f",{X[0,0]:.4f}" #theta_1
+            s += f",{X[0,1]:.4f}" #omega_1
+            s += f",{X[1,0]:.4f}" #theta_2
+            s += f",{X[1,1]:.4f}" #omega_2
             # print( s )
 
             f.write( s )
             if t >= max_time:
                 break
-    
+
+def init_omega2( theta1 , theta2 )    
 
 def main():
 
     path = "data/simulations/double_pendulum"
-    h_step = 5*( 1e-4 )
+    h_step = 1e-2
     max_time = 120
 
-    Num_train = 90
-    Num_test  = 10
+    angles = np.linspace( 0 , np.pi/2 , 11 )
+    combs = itt.product( angles , repeat = 4 )
+    #------------------------------------------------------
+    # Throw away, as value equals 0 0 0 0. returning a 
+    # static pendulum
+    next( combs )
 
-    h = 0.01
-    for i in range( Num_train + Num_test):
+    i , total = 0 , 0 
+    for tup in combs:
 
-        if i == 0:
-            X = np.array([
-                [ 1 , 0 ],
-                [ 1 , 0 ],
-            ]) 
-        elif i == 1:
-            X = np.array([
-                [ 1 , 0 ],
-                [ 1 + h , 0 ]
-            ])
-        elif i == 2:
-            X = np.array([
-                [ 1 , 0 ],
-                [ 1 - h , 0 ]
-            ])
-        X = X*( np.pi/2 )
+        theta_1 , omega_1 , theta_2 , omega_2 = tup
+        X = np.array([
+            [ theta_1 , omega_1 ],
+            [ theta_2 , omega_2 ]
+        ])
         
-        rpk = rk2_machine(
+        rpk = get_rk4_machine(
             X,
             h_step,
-            dpend_update,
-            None
+            dpend_update
         )
 
-        if i < Num_train:
-            end = f"/train_data/train_{i}.csv"
-        else:
-            end = f"/test_data/test_{ i - Num_train }.csv"
+        end = f"/case_{i}.csv"
         full_path = path + end
+        i += 1
 
+        t = time.time()
         simulate( rpk , max_time , full_path)
+        dt = time.time() - t
+        total += dt
+
+        print( end + "--------------------------" )
+        print( f"theta_1 = {theta_1:.2f} rad")
+        print( f"theta_2 = {theta_2:.2f} rad")
+        print( f"omega_1 = {omega_1:.2f} rad/s")
+        print( f"omega_2 = {omega_2:.2f} rad/s")
+
+        print( f"\ntempo de exec = {1000*dt:.2f} ms\n")
+    
+    sec , ms = int( total ) , ( 1000*total )%1000
+    minium , sec = sec//60 , sec%60 
+    print( f"\ntempo total = {minium}:{sec}:{ms} mins")
+
 
 if __name__ == "__main__":
     main()
 
+    thrd.Thread()
     # path = "data/simulations/double_pendulum/train_data"
     # h_step = 5*( 1e-4 )
     # max_time = 120

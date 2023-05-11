@@ -139,7 +139,7 @@ def print_simulation( sim_list ):
 
     dps = []
     for sim_num in sim_list:
-        path = f"data/simulations/double_pendulum/train_data/train_{sim_num}.csv"
+        path = f"data/simulations/double_pendulum/case_{sim_num}.csv"
         df = pd.read_csv( path )
         idf = interpolate_FPS( df )
         cdf = from_polar( idf )
@@ -167,4 +167,4 @@ if __name__ == "__main__":
 
     argl = sys.argv[ 1: ]
     if not( argl ):
-        print_simulation( [ 0 , 1 , 2 ] )
+        print_simulation( [ 2000 , 1999 ] )
