@@ -167,4 +167,7 @@ if __name__ == "__main__":
 
     argl = sys.argv[ 1: ]
     if not( argl ):
-        print_simulation( [ 2000 , 1999 ] )
+        sim_list = [ 0 , 1 , 2 ]
+    else:
+        sim_list = [ int( x ) for x in argl ]
+    print_simulation( sim_list )

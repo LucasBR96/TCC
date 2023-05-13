@@ -74,7 +74,30 @@ def simulate( rkp : rk_machine , max_time , path ):
             if t >= max_time:
                 break
 
-def init_omega2( theta1 , theta2 )    
+def init_omega2( theta1 , theta2 ):
+
+    """
+    All simulations must begin with the same
+    mechanical energy, wicht is the one when
+    both arms of the pendulum are paralel to the
+    ground and with angular velocity equal to 
+    zero
+
+    for that, we will consider omega one equal
+    to zero and calculate omega2 based on theta1
+    and theta2
+    """
+
+    omega2 = np.sqrt(
+        2*np.cos( theta1 ) + np.cos( theta2 )
+    )
+
+    #------------------------------------------------
+    # If the starts to the right of the y axis, 
+    # it should start swinging clockwise
+    if( np.sin( theta1 ) + np.sin( theta2 ) >= 0 ):
+        omega2 *= -1
+    return omega2    
 
 def main():
 
