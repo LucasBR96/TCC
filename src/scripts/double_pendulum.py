@@ -1,6 +1,6 @@
 import os
 import sys
-ipath = os.getcwd() + "/src/classes"
+ipath = os.getcwd() + "/src/classes/RungeKutta"
 sys.path.append( ipath )
 
 import itertools as itt
