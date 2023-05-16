@@ -1,10 +1,15 @@
 import torch as tc
 import torch.utils.data as tdt
-
 import pandas as pd
 import numpy as np
 
 from typing import *
+import os
+import sys
+
+utilpath = os.getcwd() + "/src/util"
+sys.path.append( utilpath )
+from aux_fun import interpolate , edge_search
 
 class TimeStateDset( tdt.Dataset ):
 
@@ -49,6 +54,28 @@ class TimeStateDset( tdt.Dataset ):
             S_prime_2 = self.conversion( nxt_row_2 )
             t_2 = nxt_row_1[ "t" ]
 
-            S_prime = interpolate( S_prime_1 , t_1 , S_prime_2 , t_2 )
+            S_prime = interpolate( S_prime_1 , t_1 , S_prime_2 , t_2 , t_prime )
         
         return S , S_prime
+
+def get_dp_sampler( simmu_id : int , step : float = 0.5 ):
+
+    def conversion( row : pd.DataFrame ):
+
+        S = tc.zeros( ( 2 , 2 ) )
+        S[ 0 , 0 ] = row[ "theta_1" ]
+        S[ 0 , 1 ] = row[ "omega_1" ]
+        S[ 1 , 0 ] = row[ "theta_2" ]
+        S[ 1 , 1 ] = row[ "omega_2" ]
+
+        return S
+    
+    path = f"data/simulations/double_pendulum/case_{simmu_id}.csv"
+    df = pd.read_csv( path )
+    
+    return TimeStateDset( df , step , conversion )
+
+if __name__ == "__main__":
+
+    g = get_dp_sampler( 71 )
+    print( g[ 15 ] )

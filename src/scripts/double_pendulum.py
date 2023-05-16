@@ -1,13 +1,14 @@
 import os
 import sys
-ipath = os.getcwd() + "/src/classes/RungeKutta"
-sys.path.append( ipath )
 
 import itertools as itt
 import time
 import threading as thrd
 
 import numpy as np
+
+rkpath = os.getcwd() + "/src/classes/RungeKutta"
+sys.path.append( rkpath )
 from rk_machine import rk_machine , get_rk4_machine
 
 def get_omega1_dot( theta1 , omega1 , theta2 , omega2 ):

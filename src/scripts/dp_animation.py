@@ -3,16 +3,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+import os
+import sys
 from collections import deque
 from random import randint
-import sys
+
+utilpath = os.getcwd() + "/src/util"
+sys.path.append( utilpath )
+from aux_fun import interpolate
 
 FPS = 48
-
-def interpolate( x1 , t1 , x2 , t2 , t_mid ):
-
-    alpha = ( t2 - t_mid )/( t2 - t1 )
-    return x1*alpha + x2*( 1 - alpha )
 
 def interpolate_FPS( df : pd.DataFrame , rate = FPS ):
 
