@@ -37,3 +37,6 @@ class state_mlp( tnn.Module ):
         else:
             S_hat = tc.reshape( Z , ( self.nrow , self.ncol ) )
         return S_hat
+
+def get_dp_mlp( num_layers : int , layer_w : int  ) -> state_mlp:
+    return state_mlp( 2 , 2 , num_layers , layer_w , tnn.ReLU )
