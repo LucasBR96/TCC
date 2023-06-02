@@ -9,10 +9,12 @@ import itertools as itt
 import time
 import threading as thrd
 import time as t
+from typing import *
 
 #---------------------------------------------------------
 # 3rd party mods
 import numpy as np
+import pandas as pd
 
 #----------------------------------------------------
 # From this project
@@ -23,10 +25,9 @@ from rk_machine import rk_machine , get_rk4_machine
 THETA_DIVS = 10
 THETA_RANGE = np.linspace( -np.pi/2 , np.pi/2 , THETA_DIVS )
 
-H_STEP = 1e-3
-MAX_TIME = 240
-
-NUM_THREADS = 4
+H_STEP = 1e-2
+R_STEP = 5*1e-2
+MAX_TIME = 300
 
 def get_omega1_dot( theta1 , omega1 , theta2 , omega2 ):
 
@@ -122,36 +123,38 @@ def init_rk( simu_id : int ) -> rk_machine:
 
     return rpk
 
-def simulate( rkp : rk_machine , path ):
+def simulate( rkp : rk_machine ) -> Tuple[ pd.DataFrame , float ]:
 
-    with open( path , "a" ) as f:
-        f.write( "t,theta_1,omega_1,theta_2,omega_2")
+    total_time = 0
+    register_list = []
 
-        while True:
+    num_iter = int( MAX_TIME/H_STEP )
+    rec_interval = int( R_STEP/H_STEP )
+    for i in range( num_iter ):
 
-            t , X = rkp()
-            
-            s = f"\n{t:.3f}"
-            s += f",{X[0,0]:.4f}" #theta_1
-            s += f",{X[0,1]:.4f}" #omega_1
-            s += f",{X[1,0]:.4f}" #theta_2
-            s += f",{X[1,1]:.4f}" #omega_2
-            # print( s )
+        start = time.time()
+        t , X = rkp()
+        total_time += time.time() - start
 
-            f.write( s )
-            if t >= MAX_TIME:
-                break
+        if not i%rec_interval:
 
-def thrd_simu( thread_id : int ):
+            d = {}
 
-    i = thread_id
-    while i < THETA_DIVS**2:
+            d["t"] = f"{t:.3f}"
+            d[ "theta_1" ] = f"{X[0,0]:.4f}"
+            d[ "omega_1" ] = f"{X[0,1]:.4f}"
+            d[ "theta_2" ] = f"{X[1,0]:.4f}"
+            d[ "omega_2" ] = f"{X[1,1]:.4f}"
 
-        path = f"data/test/dp_thread/case_{i}.csv"
-        rk : rk_machine = init_rk( i )
-        simulate( rk , path )
+            register_list.append( d )
+    
+    return pd.DataFrame( register_list ) , total_time
 
-        i += NUM_THREADS
+def record_simu( simu_data : pd.DataFrame , path : str ):
+    simu_data.to_csv( path , index = False )
+
+def record_meta( simu_data : pd.DataFrame , simu_id : int , exec_time : float ):
+    pass
 
 def main():
 
