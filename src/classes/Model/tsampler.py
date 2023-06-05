@@ -35,10 +35,12 @@ class TimeStateDset( tdt.Dataset ):
     
     def __getitem__(self, index) -> Tuple[ tc.Tensor , tc.Tensor ]:
         
+        #----------------------------------------------------
+        # finding the base state
         row : pd.Series = self.df.iloc[ index ]
         S : tc.Tensor = self.conversion( row )
 
-        t_prime = self.step + row[ "t"]
+        t_prime = self.step + row[ "t" ]
         next_idx : int = edge_search( self._time_poins , t_prime )
 
         if self._time_poins[ next_idx ] == t_prime:
@@ -52,7 +54,7 @@ class TimeStateDset( tdt.Dataset ):
 
             nxt_row_2 : pd.Series = self.df.iloc[ next_idx + 1]
             S_prime_2 = self.conversion( nxt_row_2 )
-            t_2 = nxt_row_1[ "t" ]
+            t_2 = nxt_row_2[ "t" ]
 
             S_prime = interpolate( S_prime_1 , t_1 , S_prime_2 , t_2 , t_prime )
         
