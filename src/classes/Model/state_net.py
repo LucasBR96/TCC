@@ -8,6 +8,8 @@ class state_mlp( tnn.Module ):
 
         super().__init__()
 
+        self.num_layers = num_layers
+        self.layer_w = layer_w
         self.nrow = nrow
         self.ncol = ncol
         in_size = nrow*ncol

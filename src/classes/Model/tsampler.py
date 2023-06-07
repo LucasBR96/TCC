@@ -9,7 +9,7 @@ import sys
 
 utilpath = os.getcwd() + "/src/util"
 sys.path.append( utilpath )
-from aux_fun import interpolate , edge_search
+from aux_fun import interpolate , edge_search , data_generate
 
 class TimeStateDset( tdt.Dataset ):
 
@@ -60,7 +60,7 @@ class TimeStateDset( tdt.Dataset ):
         
         return S , S_prime
 
-def get_dp_sampler( simmu_id : int , step : float = 0.5 ):
+def get_dp_sampler( sim_list , batch_size = 500 , step : float = 0.5 ):
 
     def conversion( row : pd.DataFrame ):
 
@@ -72,11 +72,15 @@ def get_dp_sampler( simmu_id : int , step : float = 0.5 ):
 
         return S
     
-    path = f"data/simulations/double_pendulum/case_{simmu_id}.csv"
-    df = pd.read_csv( path )
-    
-    return TimeStateDset( df , step , conversion )
+    def make_dset( simmu_id ):
 
+        path = f"data/simulations/double_pendulum/case_{simmu_id}.csv"
+        df = pd.read_csv( path )
+        
+        return TimeStateDset( df , step , conversion )
+
+    return data_generate( sim_list , make_dset , batch_size )
+    
 if __name__ == "__main__":
 
     g = get_dp_sampler( 71 )
