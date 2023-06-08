@@ -1,15 +1,33 @@
 import os
 import sys
+rkpath = os.getcwd() + "/src/classes/RungeKutta"
+sys.path.append( rkpath )
 
+# ----------------------------------------------------------------
+# Standard library
 import itertools as itt
 import time
 import threading as thrd
+import time as t
+from typing import *
 
+#---------------------------------------------------------
+# 3rd party mods
 import numpy as np
+import pandas as pd
 
-rkpath = os.getcwd() + "/src/classes/RungeKutta"
-sys.path.append( rkpath )
+#----------------------------------------------------
+# From this project
 from rk_machine import rk_machine , get_rk4_machine
+
+#------------------------------------------------------
+# CONSTANTS
+THETA_DIVS = 10
+THETA_RANGE = np.linspace( -np.pi/2 , np.pi/2 , THETA_DIVS )
+
+H_STEP = 1e-2
+R_STEP = 5*1e-2
+MAX_TIME = 300
 
 def get_omega1_dot( theta1 , omega1 , theta2 , omega2 ):
 
@@ -27,6 +45,31 @@ def get_omega2_dot( theta1 , omega1 , theta2 , omega2 ):
 
     den = 3 - np.cos( 2*theta1 - 2*theta2 )
     return num_1*num_2/den
+
+def init_omega2( theta1 , theta2 ):
+
+    """
+    All simulations must begin with the same
+    mechanical energy, wicht is the one when
+    both arms of the pendulum are paralel to the
+    ground and with angular velocity equal to 
+    zero
+
+    for that, we will consider omega one equal
+    to zero and calculate omega2 based on theta1
+    and theta2
+    """
+
+    omega2 = np.sqrt(
+        2*np.cos( theta1 ) + np.cos( theta2 )
+    )
+
+    #------------------------------------------------
+    # If the starts to the right of the y axis, 
+    # it should start swinging clockwise
+    if( np.sin( theta1 ) + np.sin( theta2 ) >= 0 ):
+        omega2 *= -1
+    return omega2
 
 def dpend_update( X : np.ndarray ):
 
@@ -55,50 +98,63 @@ def dpend_update( X : np.ndarray ):
 
     return X_hat
 
-def simulate( rkp : rk_machine , max_time , path ):
-
-    with open( path , "a" ) as f:
-        f.write( "t,theta_1,omega_1,theta_2,omega_2")
-
-        while True:
-
-            t , X = rkp()
-            
-            s = f"\n{t:.3f}"
-            s += f",{X[0,0]:.4f}" #theta_1
-            s += f",{X[0,1]:.4f}" #omega_1
-            s += f",{X[1,0]:.4f}" #theta_2
-            s += f",{X[1,1]:.4f}" #omega_2
-            # print( s )
-
-            f.write( s )
-            if t >= max_time:
-                break
-
-def init_omega2( theta1 , theta2 ):
-
-    """
-    All simulations must begin with the same
-    mechanical energy, wicht is the one when
-    both arms of the pendulum are paralel to the
-    ground and with angular velocity equal to 
-    zero
-
-    for that, we will consider omega one equal
-    to zero and calculate omega2 based on theta1
-    and theta2
-    """
-
-    omega2 = np.sqrt(
-        2*np.cos( theta1 ) + np.cos( theta2 )
-    )
+def init_rk( simu_id : int ) -> rk_machine:
 
     #------------------------------------------------
-    # If the starts to the right of the y axis, 
-    # it should start swinging clockwise
-    if( np.sin( theta1 ) + np.sin( theta2 ) >= 0 ):
-        omega2 *= -1
-    return omega2    
+    # Getting the initial state
+    idx_1 = simu_id%THETA_DIVS
+    theta_1 = THETA_RANGE[ idx_1 ]
+
+    idx_2 = simu_id//THETA_DIVS
+    theta_2 = THETA_RANGE[ idx_2 ]
+
+    omega_2 = init_omega2( theta_1 , theta_2)
+
+    X = np.array([
+        [ theta_1 , 0 ],
+        [ theta_2 , omega_2]
+    ])
+
+    rpk = get_rk4_machine(
+        X,
+        H_STEP,
+        dpend_update
+    )
+
+    return rpk
+
+def simulate( rkp : rk_machine ) -> Tuple[ pd.DataFrame , float ]:
+
+    total_time = 0
+    register_list = []
+
+    num_iter = int( MAX_TIME/H_STEP )
+    rec_interval = int( R_STEP/H_STEP )
+    for i in range( num_iter ):
+
+        start = time.time()
+        t , X = rkp()
+        total_time += time.time() - start
+
+        if not i%rec_interval:
+
+            d = {}
+
+            d["t"] = f"{t:.3f}"
+            d[ "theta_1" ] = f"{X[0,0]:.4f}"
+            d[ "omega_1" ] = f"{X[0,1]:.4f}"
+            d[ "theta_2" ] = f"{X[1,0]:.4f}"
+            d[ "omega_2" ] = f"{X[1,1]:.4f}"
+
+            register_list.append( d )
+    
+    return pd.DataFrame( register_list ) , total_time
+
+def record_simu( simu_data : pd.DataFrame , path : str ):
+    simu_data.to_csv( path , index = False )
+
+def record_meta( simu_data : pd.DataFrame , simu_id : int , exec_time : float ):
+    pass
 
 def main():
 
@@ -150,40 +206,19 @@ def main():
     print( f"\ntempo total = {minium}:{sec}:{ms} mins")
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     # main()
 
-    thrd.Thread()
-    # path = "data/simulations/double_pendulum/train_data"
-    # h_step = 5*( 1e-4 )
-    # max_time = 120
-
-    # h = 0.01
-    # for i in range( 1 ):
-
-    #     if i == 0:
-    #         X = np.array([
-    #             [ 1 , 0 ],
-    #             [ 1 , 0 ],
-    #         ]) 
-    #     elif i == 1:
-    #         X = np.array([
-    #             [ 1 , 0 ],
-    #             [ 1 + h , 0 ]
-    #         ])
-    #     elif i == 2:
-    #         X = np.array([
-    #             [ 1 , 0 ],
-    #             [ 1 - h , 0 ]
-    #         ])
-    #     X = X*( np.pi/2 )
-
-    #     rpk = rk2_machine(
-    #         X,
-    #         h_step,
-    #         dpend_update,
-    #         None
-    #     )
-
-    #     full_path = path + f"/train_{i}.csv"
-    #     simulate( rpk , max_time , full_path )
+#     def print_even( ):
+#         for i in range( 10 ):
+#             print( 2*i  )
+    
+#     def print_odd( ):
+#         for i in range( 10 ):
+#             print( 2*i + 1 )
+    
+#     t1 = thrd.Thread( target = print_even )
+#     t2 = thrd.Thread( target = print_odd )
+    
+#     t1.start()
+#     t2.start()
