@@ -54,7 +54,7 @@ def get_dpend( X : np.ndarray ):
 
 def init_rk( theta , omega , l ) -> rk_machine:
 
-    X = np.array([ theta , omega , l ] )
+    X = np.array([ l , theta , omega ] )
 
     rpk = get_rk4_machine(
         X,
@@ -136,6 +136,10 @@ def main():
             "l":     f"{l:.4f}",
             "duration": duration
         }
+
+        if i == 500:
+            break
+        
         meta_lst.append( meta_d )
         print( meta_d.items() )
     
