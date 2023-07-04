@@ -41,7 +41,10 @@ class tr_core:
         with tc.no_grad():
             
             X_hat , loss_val = self( X , X_prime )
-            X_arr = X_hat.numpy()
+            try:
+                X_arr = X_hat.numpy()
+            except TypeError:
+                X_arr = X_hat.cpu().numpy()
             loss_item = loss_val.item()
         
         return X_arr , loss_item

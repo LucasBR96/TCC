@@ -3,6 +3,7 @@ import torch as tc
 import torch.utils.data as tdt
 
 from typing import *
+import random as rd
 
 def basic_k_fold( n : int , k : int ):
 
@@ -47,27 +48,22 @@ def edge_search( arr : np.ndarray | tc.Tensor , x : Any ):
 def data_generate( sim_list : List[ int ], load_fun , batch_size = 500  ):
 
     d_loader : Iterator = iter([])
-
+    rd.shuffle( sim_list )
     i = 0
     while True:
 
         nxt_batch = next( d_loader , None )
 
         if not ( nxt_batch is None):
-            # yield i , nxt_batch
-            yield nxt_batch
+            yield i , nxt_batch
+            # yield nxt_batch
             continue
         
-        if i < len( sim_list ):
-
-            d_loader = iter(
-                tdt.DataLoader(
-                    load_fun( sim_list[ i ] ),
-                    batch_size = batch_size,
-                    shuffle = True
-                )
+        d_loader = iter(
+            tdt.DataLoader(
+                load_fun( sim_list[ i ] ),
+                batch_size = batch_size,
+                shuffle = True
             )
-            i += 1
-            continue
-        
-        break
+        )
+        i = ( i + 1 )%( len( sim_list ))

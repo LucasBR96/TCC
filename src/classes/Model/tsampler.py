@@ -80,7 +80,26 @@ def get_dp_sampler( sim_list , batch_size = 500 , step : float = 0.5 ):
         return TimeStateDset( df , step , conversion )
 
     return data_generate( sim_list , make_dset , batch_size )
+
+def get_single_sampler( sim_list , batch_size = 500 , step : float = 0.5 ):
+
+    def conversion( row : pd.DataFrame ):
+
+        S = tc.zeros( 3 )
+        S[ 0 ] = row[ "l" ]
+        S[ 1 ] = np.rad2deg( row[ "theta" ] )
+        S[ 2 ] = np.rad2deg( row[ "omega" ] )
+
+        return S
     
+    def make_dset( simmu_id ):
+
+        path = f"data/simulations/single_pendulum/case_{simmu_id}.csv"
+        df = pd.read_csv( path )
+        
+        return TimeStateDset( df , step , conversion )
+
+    return data_generate( sim_list , make_dset , batch_size )
 if __name__ == "__main__":
 
     g = get_dp_sampler( 71 )
