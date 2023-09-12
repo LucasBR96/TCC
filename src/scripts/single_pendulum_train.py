@@ -1,6 +1,7 @@
 import sys
 import os
 import argparse
+from itertools import product
 
 import torch as tc
 import torch.nn as tnn
@@ -13,7 +14,7 @@ utilpath = os.getcwd() + "/src/classes"
 sys.path.append( utilpath )
 from App.train_core import tr_core
 from Model.tsampler import get_single_sampler
-from Model.state_net import get_pend_mlp
+from Model.state_net import get_reg_mlp
 
 utilpath = os.getcwd() + "/src/util"
 sys.path.append( utilpath )
@@ -23,23 +24,21 @@ from aux_fun import basic_k_fold
 DEVICE = "cuda" if tc.cuda.is_available() else "cpu"
 NUM_SIMUS = 500
 
-def make_core( **kwargs ) -> tr_core:
+def make_core( shape , lr , omega ) -> tr_core:
 
     #--------------------------------------------
     # initing the neural network
-    num_layers = kwargs.get( "num_layers" , 5 )
-    layer_w = kwargs.get( "layer_w" , 20 )
-    net = get_pend_mlp( num_layers , layer_w ).to( DEVICE )
+    shape = [3] + shape + [2]
+    net = get_reg_mlp( shape ).to( DEVICE )
 
     #---------------------------------------------
     # opm
-    lr = kwargs.get( "lr" , 1e-3 )
-    opm_type = kwargs.get( "opm" , top.Adam )
-    opm = opm_type( net.parameters() , lr = lr )
+    opm_type = top.Adam
+    opm = opm_type( net.parameters() , lr = lr , weight_decay = omega )
 
     #--------------------------------------------
     # loss
-    loss_type = kwargs.get( "loss_fn" , tnn.L1Loss )
+    loss_type = tnn.L1Loss 
     loss_fn = loss_type()
 
     return tr_core(
@@ -103,27 +102,60 @@ def train( core , test_simu , train_simu , batch_size = 500 , step = 0.5 , num_i
         result.loc[ i ] = [ tr_loss , ts_loss ]
     return result
 
+def grid_eval( shapes , lrs , omegas , test_simu , train_simu  ):
+
+    best = sys.maxsize
+    best_attr = None
+
+    for shape , lr , omega in product( shapes , lrs , omegas ):
+
+        core = make_core( shape , lr , omega )
+        results = train( core , test_simu , train_simu , batch_size = 5000 , num_iters = 1000 , verbose = False , eval_step = 10 )
+        best_local = results["ts_cost"].min()
+
+        if best_local < best:
+
+            print( f"\nshape = {shape}" )
+            print( f"lr = {lr:.5f}" )
+            print( f"omega = {omega:.5f}")
+            print( f"cost = {best_local:.5f}")
+
+            best = best_local
+            best_attr = ( shape , lr , omega )
+    
+    print( "\n\nGOAT ---------------------------")
+    shape , lr = best_attr
+    print( f"shape = {shape}" )
+    print( f"lr = {lr:.5f}" )
+    print( f"omega = {omega:.5f}")
+    print( f"cost = {best_local:.5f}" )
+
 if __name__ == "__main__":
     
     import matplotlib
     import matplotlib.pyplot as plt
-
+    import numpy as np
     #data_sets
     test_data , train_data = next( basic_k_fold( NUM_SIMUS , 10 ) )
     colors = [ "red" , "green" , "purple" , "black" ]
-    sizes  = [ .05 , .1 , .5 , 1. ]
+    sizes  = [ 
+        [ 512 ],
+        [ 256 , 256 ],
+        [ 256 , 128 , 128 ],
+        [ 256 , 128 , 64 , 64 ]
+    ]
 
-    for i in range( 4 ):
-        #training device
+    lrs = np.linspace( 1e-4 , 1e-3 , 5 )
+    omegas = np.linspace( 1e-1 , 1 , 5 )
+    grid_eval( sizes , lrs, omegas , test_data , train_data )
 
-        print( f"step = {sizes[ i ]}")
-        core = make_core( lr = 1e-3  , layer_w = 128 , num_layers = 6 )
-        result = train( core , test_data , train_data , step = sizes[ i ], verbose = True, num_iters = 4*( 10**3 ) , batch_size = 5000 )
+    # for i in range( 4 ):
+    #     #training device
 
-        plt.plot( result.index , result[ "ts_cost" ] , linestyle = "-" , color = colors[ i ] , label = f"t = {sizes[i]}" )
-        plt.plot( result.index , result[ "tr_cost" ] , linestyle = "--" , lw = .3 , color = colors[ i ] )
+    #     print( f"shape = {sizes[ i ]}")
+    #     core = make_core( sizes[ i ] , 1e-3 )
+    #     result = train( core , test_data , train_data , step = .05 , verbose = True, num_iters = 200 , batch_size = 5000, eval_step = 10 )
 
-
-    plt.yscale( 'log' )
-    plt.legend()
-    plt.show()
+    #     plt.plot( result.index , result[ "ts_cost" ] , linestyle = "-" , color = colors[ i ] , label = f"{i}" )
+    #     plt.plot( result.index , result[ "tr_cost" ] , linestyle = "--" , lw = .3 , color = colors[ i ] )
+    #     plt.show()

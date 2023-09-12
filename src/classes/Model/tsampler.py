@@ -11,6 +11,20 @@ utilpath = os.getcwd() + "/src/util"
 sys.path.append( utilpath )
 from aux_fun import interpolate , edge_search , data_generate
 
+class MultiTimeStateDset( tdt.Dataset ):
+
+    def __init__( self , path_lst : List[ str ], step : float , conversion : Callable[ [ pd.Series ] , tc.Tensor ] , in_size = 10**5 ):
+
+        # number of calls
+        self.n = in_size
+
+        # list of strings containing the paths for each simul
+        # ation
+        self.path_lst = path_lst
+
+        # time distance between the base state and the next
+        
+
 class TimeStateDset( tdt.Dataset ):
 
     def __init__( self , df : pd.DataFrame , step : float , conversion : Callable ) -> None:

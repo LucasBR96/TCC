@@ -2,6 +2,7 @@ import torch as tc
 import torch.nn as tnn
 import torch.nn.functional as tfun
 
+from typing import *
 
 class diamond_mlp( tnn.Module ):
 
@@ -70,3 +71,23 @@ def get_dp_mlp( num_layers : int , layer_w : int  ) -> state_mlp:
 
 def get_pend_mlp( num_layers : int , layer_w : int  ) -> state_mlp:
     return diamond_mlp( num_layers , layer_w , 3 , tnn.ReLU, 2 )
+
+def get_reg_mlp( shape : int , inner_fun = tnn.ReLU ) -> state_mlp:
+    
+    net = tnn.Sequential()
+
+    i , n = 1 , len( shape )
+    while i < n:
+
+        s0 = shape[ i - 1 ]
+        s1 = shape[ i ]
+        net.append(
+            tnn.Linear( s0 , s1 )
+        )
+
+        if i < n - 1:
+            net.append( inner_fun() )
+        
+        i += 1
+    
+    return net
