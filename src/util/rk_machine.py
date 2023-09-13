@@ -37,25 +37,3 @@ class rk_machine:
         self.time_elapsed += self.h
         return tup
 
-def rk2( X : np.ndarray , h : float, der_fun : Callable ):
-
-    k1 = der_fun( X )
-    k2 = der_fun(
-        X + h*k1 
-    )
-    return ( k1 + k2 )/2
-
-def get_rk2_machine( X : np.ndarray , h : float, der_fun : Callable , h_fun : Callable = None ):
-    return rk_machine( X , h , der_fun , rk2 , h_fun )
-
-def rk4( X : np.ndarray , h : float, der_fun : Callable ):
-
-    k1 = der_fun( X )
-    k2 = der_fun( X + k1*( h/2 ) )
-    k3 = der_fun( X + k2*( h/2 ) )
-    k4 = der_fun( X + k3*h )
-
-    return ( k1 + 2*k2 + 2*k3 + k4 )/6
-
-def get_rk4_machine( X : np.ndarray , h : float, der_fun : Callable , h_fun : Callable = None ):
-    return rk_machine( X , h , der_fun , rk4 , h_fun )
