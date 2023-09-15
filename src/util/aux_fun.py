@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 
 from src.util.rk_machine import *
 from src.util.loader_data import *
+from src.util.constantes import *
 
 # runge kutta methods --------------------------------------------------------
 def rk2( X : np.ndarray , h : float, der_fun : Callable ):
@@ -37,112 +38,34 @@ def rk4( X : np.ndarray , h : float, der_fun : Callable ):
 def get_rk4_machine( X : np.ndarray , h : float, der_fun : Callable , h_fun : Callable = None ):
     return rk_machine( X , h , der_fun , rk4 , h_fun )
 
+def rk_iterator( rk : rk_machine, num_iter : int = 10 ):
 
-# Double pendulum -------------------------------------------------------------------------
-def get_omega1_dot( theta1 , omega1 , theta2 , omega2 ):
+    # at least one iteration. if it is one, it would be 
+    # better to just call the rk machine straight
+    num_iter = max( 1 , num_iter )
 
-    num1 = -3*np.sin( theta1 )
-    num2 = -np.sin( theta1 - 2*theta2 )
-    num3 = -2*np.sin( theta1 - theta2 )*( omega2**2 + ( omega1**2 )*np.cos( theta1 - theta2 ) )
+    while True:
 
-    den = 3 - np.cos( 2*theta1 - 2*theta2 )
-    return ( num1 + num2 + num3 )/den
-
-def get_omega2_dot( theta1 , omega1 , theta2 , omega2 ):
-
-    num_1 = 2*np.sin( theta1 - theta2 )
-    num_2 = 2*( omega1**2 ) + 2*np.cos( theta1 ) + ( omega2**2 )*np.cos( theta1 - theta2 )
-
-    den = 3 - np.cos( 2*theta1 - 2*theta2 )
-    return num_1*num_2/den
-
-def dpend_update( X : np.ndarray ):
-
-    '''
-
-    Considering X like:
-
-    X = [ theta_1 , theta_2 , omega_1 , omega_2 ]
-
-    where theta is the angle and omega is the angualar velocity
-
-    G = L1 = L2 = M1 = M2 = 1
-    '''
-
-    theta_1 = X[ 0 ]
-    theta_2 = X[ 1 ]
-    omega_1 = X[ 2 ]
-    omega_2 = X[ 3 ]
-
-    X_hat = np.zeros( 4 )
-    X_hat[ 0 ] = omega_1
-    X_hat[ 1 ] = omega_2 
-    X_hat[ 2 ] = get_omega1_dot( theta_1 , omega_1 , theta_2 , omega_2 )
-    X_hat[ 3 ] = get_omega2_dot( theta_1 , omega_1 , theta_2 , omega_2 )
-
-    return X_hat
+        yield rk()
+        for _ in range( num_iter - 1 ):
+            rk()
 
 
-# -------------------------------------------------------------------
-# coordinate manipulation
-def from_polar( df : pd.DataFrame ):
+# projectile launch -------------------------------------------------------------------------
+def get_xacc( vel_x ):
+    return -AIR_DRAG*np.abs( vel_x )*vel_x
 
-    theta_1 = df[ "theta_1" ].to_numpy()
-    theta_2 = df[ "theta_2" ].to_numpy()
+def get_yacc( vel_y ):
+    return get_xacc( vel_y ) - G
 
-    # ref = 1.5*np.pi
-    x1 = np.sin( theta_1 )
-    y1 = -np.cos( theta_1 )
+def state_update( state : np.ndarray ):
 
-    x2 = x1 + np.sin( theta_2 )
-    y2 = y1 - np.cos( theta_2 )
+    state_delta = np.ndarray( 4 )
 
-    cart_df = pd.DataFrame()
-    cart_df[ "t" ] = df[ "t" ]
-    cart_df[ "x1" ] = x1
-    cart_df[ "y1" ] = y1
-    cart_df[ "x2" ] = x2
-    cart_df[ "y2" ] = y2
+    _ , _ , vx , vy = state
+    state_delta[ 0 ] = vx
+    state_delta[ 1 ] = vy
+    state_delta[ 2 ] = get_xacc( vx )
+    state_delta[ 3 ] = get_yacc( vy )
 
-    return cart_df
-
-def sample_coordinates( cart_df : pd.DataFrame, start = 0 , end = 10 ):
-
-    start = max( 0 , start )
-    end   = max( 0 , end )
-    if end <= start :
-        raise ValueError( "only one value between above and below can be equal to zero")
-
-    below = cart_df[ "t" ] < end
-    above = cart_df[ "t" ] >= start
-    where = above & below
-
-    return cart_df.loc[ where ]
-
-# def plot_path( ax : plt.Axes , cart_df : pd.DataFrame, moment , before : float = 10 , after = 10 ):
-#     pass
-
-# -----------------------------------------------------------------
-# sampling data
-def make_sampler( pos_frame , train_ratio = .5 , batch_size = 50 ):
-
-    t_max = pos_frame[ "t" ].max()
-    ceil = train_ratio*t_max
-
-    where = pos_frame[ "t" ] <= ceil
-    train_df = pos_frame.loc[ where ]
-    train_loader = tdt.DataLoader(
-        meu_loader( train_df ),
-        batch_size,
-        shuffle = True
-    )
-
-    test_df = pos_frame.loc[ ~where ]
-    test_loader = tdt.DataLoader(
-        meu_loader( test_df ),
-        batch_size,
-        shuffle = True
-    )
-
-    return train_loader , test_loader
-
+    return state_delta
