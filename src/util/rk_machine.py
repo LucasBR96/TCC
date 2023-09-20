@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from typing import *
 
 class rk_machine:
@@ -16,9 +17,19 @@ class rk_machine:
         self.h_fun = h_fun      # Adaptative timestep function
         self.rk_fun = rk_fun    # Runge kutta function
 
-        self.time_elapsed = 0   # Time since the simulation started
+        self.time_elapsed = 0   # Time since the simulation started ( simulation )
+        self.clock        = 0   # Time since the simulation started ( real )
 
     def __call__( self ):
+
+        t = time.time()
+        tup = self.step()
+        dt = time.time() - t
+
+        self.clock += dt
+        return tup
+
+    def step( self ):
 
         if self.time_elapsed > 0:
             

@@ -3,7 +3,9 @@ os.chdir( "/home/lucasfuzato/TCC/CODE" )
 
 import numpy as np
 import torch as tc
-import torch.utils.data as tdt
+import torch.nn as tnn
+import torch.optim as top
+import torch.nn.functional as tfun
 import pandas as pd
 
 from typing import *
@@ -69,3 +71,76 @@ def state_update( state : np.ndarray ):
     state_delta[ 3 ] = get_yacc( vy )
 
     return state_delta
+
+# training -----------------------------------------------------------------------------------
+def make_net( 
+        shape : Tuple, 
+        activation : tnn.Module = tnn.ReLU,
+        omega = 0,
+        lr : float = 1e-3
+    ):
+
+    # making the mlp regressor
+    net = tnn.Sequential()
+    n = len( shape )
+    for i in range( 1 , n ):
+        in_size = shape[ i - 1 ]
+        out_size = shape[ i ]
+        net.append( tnn.Linear( in_size , out_size , dtype = STD_TYPE , device = DEVICE) )
+        if i < n - 1:
+            net.append( activation() )
+    # net = net.to( device )
+
+    # optimizer
+    opm = top.Adam( net.parameters() , lr = lr , weight_decay = omega )
+
+    return net , opm
+
+def fit_fun( net , opm ):
+
+    def update( X : tc.Tensor , y : tc.Tensor ):
+
+        net.zero_grad()
+
+        # ---------------------------------
+        # data loss
+        y_hat = net( X )
+        loss = tfun.mse_loss( y , y_hat )
+        loss.backward()
+        opm.step()
+        
+    return update
+
+def eval_fun( net ):
+
+    def eval_f( X : tc.Tensor , y : tc.Tensor ):
+
+        with tc.no_grad():
+            y_hat = net( X )
+            loss = tfun.mse_loss( y , y_hat )
+
+        return loss.cpu().item()
+        
+    return eval_f
+
+# ----------------------------------------------------------
+# Data manipulation
+
+# copied from stack overflow
+# source: https://stackoverflow.com/questions/14313510/how-to-calculate-rolling-moving-average-using-python-numpy-scipy
+def moving_average( a : np.ndarray , n : int = 3 ):
+    
+    # a   = [ 0 , 1 , 2 , 2 , 5 , 2 , 6 , 4 ] , n = 3
+    # ret = [ 0 , 1 , 3 , 5 , 10 , 12 , 18 , 22 ]
+    ret = np.cumsum( a , axis = 0, dtype = float )
+
+    # ret[ n: ]  = [ 5 , 10 , 12 , 18 , 22 ]
+    # ret[ :-n ] = [ 0 , 1 , 3 , 5 , 10 ]
+    #
+    # ret[ n: ]  = [ 5 , 9 , 9 , 13 , 12 ]
+    ret[n:] = ret[n:] - ret[:-n]
+    
+    # arr = [ 3 , 5 , 9 , 9 , 13 , 12 ]/3
+    # arr = [ 1 , 1.66 , 3 , 3 , 4.33 , 4 ]
+    arr = ret[n - 1:] / n
+    return arr
