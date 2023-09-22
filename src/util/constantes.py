@@ -6,11 +6,11 @@ import torch as tc
 
 # Physics constants -----------------------------------------------
 G = 9.8
-AIR_DRAG = .05
+AIR_DRAG = .02
 
 # Initial conditions ----------------------------------------------
 initial_velocities = np.arange( 50 , 101 , 2 , dtype = int )
-launch_angles      = np.arange( 15 , 61 , 5 , dtype = int )
+launch_angles      = np.arange( 15 , 61 , 2 , dtype = int )
 
 # Range kutta -----------------------------------------------------
 H_STEP = 1e-4      # range kutta interval
